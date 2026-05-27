@@ -528,5 +528,3 @@ Pregunta del usuario: "${query}"`;
     return resGuidance;
   }
 };
-
-console.log("GEMINI KEY:", import.meta.env.VITE_GEMINI_API_KEY);
