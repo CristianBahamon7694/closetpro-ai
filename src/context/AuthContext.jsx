@@ -55,25 +55,15 @@ export const AuthProvider = ({ children }) => {
     // 2. Listen to active auth session status changes (Login, Logout, Token Refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (registeringRef.current) {
-        console.log('[AuthContext] Ignoring auth state change event during active registration flow:', event);
         return;
       }
 
       const newUser = session?.user ?? null;
-      console.log('[AuthContext] onAuthStateChange event triggered:', event, {
-        userId: newUser?.id || 'null',
-        email: newUser?.email || 'null'
-      });
 
       setUser((prevUser) => {
         if (prevUser?.id === newUser?.id) {
-          console.log('[AuthContext] User state unchanged (IDs match). Skipping state update to prevent rerender loops.');
           return prevUser;
         }
-        console.log('[AuthContext] Updating user state:', {
-          from: prevUser?.email || 'null',
-          to: newUser?.email || 'null'
-        });
         return newUser;
       });
     });
@@ -86,20 +76,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    console.log('[AuthContext] login() initiated for email:', email);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      console.log('[AuthContext] Supabase signInWithPassword response:', {
-        success: !error,
-        hasUser: !!data?.user,
-        hasSession: !!data?.session,
-        errorMsg: error?.message || 'none'
-      });
 
       if (error) throw error;
       
-      console.log('[AuthContext] Login successful. Updating user state:', data.user?.email);
       setUser(data.user);
       return data.user;
     } catch (err) {
@@ -110,7 +91,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password, fullName) => {
-    console.log('[AuthContext] register() initiated for email:', email);
     registeringRef.current = true;
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -126,23 +106,14 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      console.log('[AuthContext] Supabase signUp response:', {
-        success: !error,
-        hasUser: !!data?.user,
-        hasSession: !!data?.session,
-        errorMsg: error?.message || 'none'
-      });
-
       if (error) throw error;
 
       // In some Supabase projects, email confirmation is active.
       // If data.session is null, it means confirmation is required.
       if (data?.user && !data?.session) {
-        console.log('[AuthContext] Registration completed but email confirmation is active. throwing custom tag.');
         throw new Error('registration_successful_confirm_email');
       }
 
-      console.log('[AuthContext] Registration successful. Auto-login prevention...');
       if (data?.session) {
         await supabase.auth.signOut();
       }
@@ -165,12 +136,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    console.log('[AuthContext] logout() initiated');
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      console.log('[AuthContext] Logout successful. Setting user to null.');
       setUser(null);
     } catch (err) {
       console.error('[AuthContext] Error during logout:', err);
