@@ -17,7 +17,7 @@ const formatCOP = (num) => {
  */
 const isLowStockQuery = (q) => {
   const query = q.toLowerCase();
-  
+
   // Specific phrases
   const phrases = [
     'bajo stock',
@@ -66,7 +66,7 @@ const isLowStockQuery = (q) => {
   // Check "pocas" or "bajo" combined with stock terms
   const quantifiers = ['pocas', 'pocos', 'bajo', 'bajos', 'mínimo', 'minimo', 'crítico', 'critico'];
   const stockTerms = ['unidades', 'existencias', 'prendas', 'stock', 'inventario'];
-  
+
   for (const qf of quantifiers) {
     if (query.includes(qf)) {
       for (const st of stockTerms) {
@@ -121,12 +121,12 @@ export const geminiService = {
     ];
 
     const isUnrelated = unrelatedKeywords.some(keyword => normalizedQuery.includes(keyword)) ||
-      (!inventoryKeywords.some(keyword => normalizedQuery.includes(keyword)) && 
-       normalizedQuery.length > 3 && 
-       !normalizedQuery.includes('hola') && 
-       !normalizedQuery.includes('buenos dias') && 
-       !normalizedQuery.includes('buenas tardes') &&
-       !normalizedQuery.includes('gracias'));
+      (!inventoryKeywords.some(keyword => normalizedQuery.includes(keyword)) &&
+        normalizedQuery.length > 3 &&
+        !normalizedQuery.includes('hola') &&
+        !normalizedQuery.includes('buenos dias') &&
+        !normalizedQuery.includes('buenas tardes') &&
+        !normalizedQuery.includes('gracias'));
 
     if (isUnrelated) {
       const outOfScopeResponse = {
@@ -172,12 +172,12 @@ export const geminiService = {
     if (keyExists) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
         let memoryText = "No hay mensajes previos.";
         if (history && history.length > 0) {
           const recent = history.slice(-4);
-          memoryText = recent.map(msg => 
+          memoryText = recent.map(msg =>
             `${msg.sender === 'user' ? 'Usuario' : 'Copiloto AI'}: ${msg.text}`
           ).join('\n');
         }
@@ -210,8 +210,8 @@ Pregunta del usuario: "${query}"`;
           if (match && match[1]) {
             const ids = match[1].split(',').map(id => id.trim());
             ids.forEach(id => {
-              const matchedProduct = products.find(p => 
-                String(p.sku).toLowerCase() === id.toLowerCase() || 
+              const matchedProduct = products.find(p =>
+                String(p.sku).toLowerCase() === id.toLowerCase() ||
                 String(p.id).toLowerCase() === id.toLowerCase()
               );
               if (matchedProduct) {
@@ -471,11 +471,11 @@ Pregunta del usuario: "${query}"`;
 
     // General Direct Fallback or Conversational Guidance
     const isSummaryRequest = normalizedQuery.includes('resumen') ||
-                            normalizedQuery.includes('balance') ||
-                            normalizedQuery.includes('general') ||
-                            normalizedQuery.includes('total') ||
-                            normalizedQuery.includes('tienda') ||
-                            normalizedQuery.includes('inventario');
+      normalizedQuery.includes('balance') ||
+      normalizedQuery.includes('general') ||
+      normalizedQuery.includes('total') ||
+      normalizedQuery.includes('tienda') ||
+      normalizedQuery.includes('inventario');
 
     if (isSummaryRequest) {
       const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
