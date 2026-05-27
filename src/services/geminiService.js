@@ -96,9 +96,6 @@ export const geminiService = {
     // Satisfy strict ESLint unused variable rules
     if (_sales) { /* no-op */ }
 
-    console.log('[Copilot Pipeline] 1. Raw User Message Received:', query);
-
-    // --- STEP 1: TOKEN OPTIMIZATION & DATA SIMPLIFICATION ---
     const simplifiedProducts = products.map(p => ({
       name: p.name,
       stock: p.stock,
@@ -107,8 +104,6 @@ export const geminiService = {
       sales: p.salesCount || p.sales || 0,
       sku: p.sku || `PROD-${String(p.id).slice(0, 4).toUpperCase()}`
     }));
-
-    console.log('[Copilot Pipeline] 2. Injecting Simplified Real-Time Context:', simplifiedProducts);
 
     // --- STEP 2: OUT-OF-SCOPE FILTER ---
     const unrelatedKeywords = [
@@ -134,13 +129,11 @@ export const geminiService = {
        !normalizedQuery.includes('gracias'));
 
     if (isUnrelated) {
-      console.warn('[Copilot Pipeline] Out of scope filter triggered!');
       const outOfScopeResponse = {
         intent: 'out_of_scope',
         text: "Solo puedo ayudarte con análisis relacionados con inventario, productos, ventas y operación comercial.",
         recommendedItems: []
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', outOfScopeResponse);
       return outOfScopeResponse;
     }
 
@@ -160,7 +153,6 @@ export const geminiService = {
           text: "Actualmente no tienes productos en estado de stock crítico.",
           recommendedItems: []
         };
-        console.log('[Copilot Pipeline] Low stock query matched (0 results). Response:', result);
         return result;
       }
 
@@ -170,7 +162,6 @@ export const geminiService = {
         text: `Los productos con stock crítico o bajo el mínimo son: ${listStr}. Te recomiendo reabastecerlos pronto.`,
         recommendedItems: lowStockProducts
       };
-      console.log('[Copilot Pipeline] Low stock query matched. Response:', result);
       return result;
     }
 
@@ -180,7 +171,6 @@ export const geminiService = {
 
     if (keyExists) {
       try {
-        console.log('[Copilot Pipeline] 3. Initializing Gemini API call...');
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
@@ -210,13 +200,9 @@ ${memoryText}
 
 Pregunta del usuario: "${query}"`;
 
-        console.log('[Copilot Pipeline] 4. Generated Gemini Prompt:', systemPrompt);
-
         const result = await model.generateContent(systemPrompt);
         const response = await result.response;
         const text = response.text();
-
-        console.log('[Copilot Pipeline] 5. Raw Gemini API Response:', text);
 
         if (text && text.trim().length > 0) {
           const recommendedItems = [];
@@ -243,18 +229,16 @@ Pregunta del usuario: "${query}"`;
             data: { query }
           };
 
-          console.log('[Copilot Pipeline] 6. Final parsed response returned to UI:', finalResult);
           return finalResult;
         } else {
           throw new Error("Respuesta vacía del modelo Gemini");
         }
       } catch (error) {
-        console.error('[Copilot Pipeline] Gemini API call failed, falling back to dynamic local solver:', error);
+        // Fallback silently if needed
       }
     }
 
     // --- STEP 4: REAL-TIME CONVERSATIONAL FALLBACK SOLVER (Direct, Template-Free, Dynamic) ---
-    console.warn('[Copilot Pipeline] Fallback solver activated. Mode is conversational local analysis. Key exists:', keyExists);
 
     if (!products || products.length === 0) {
       const fallbackEmpty = {
@@ -262,7 +246,6 @@ Pregunta del usuario: "${query}"`;
         text: "Actualmente no tienes ningún producto registrado en tu inventario.",
         recommendedItems: []
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', fallbackEmpty);
       return fallbackEmpty;
     }
 
@@ -275,7 +258,6 @@ Pregunta del usuario: "${query}"`;
         text: `El producto con mayor cantidad de existencias es ${top.name} con un total de ${top.stock} unidades en la categoría de ${top.category}. Su precio es de ${formatCOP(top.price)} y tiene la referencia ${top.sku}.`,
         recommendedItems: [top]
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resHighestStock);
       return resHighestStock;
     }
 
@@ -302,7 +284,6 @@ Pregunta del usuario: "${query}"`;
           text: `Sí, se detectaron los siguientes productos repetidos en el inventario: ${listStr}. Te recomiendo unificar sus registros.`,
           recommendedItems: duplicated
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resDuplicated);
         return resDuplicated;
       } else {
         const resDuplicated = {
@@ -310,7 +291,6 @@ Pregunta del usuario: "${query}"`;
           text: "No se encontraron productos duplicados en tu catálogo. Todos los nombres y códigos SKU son únicos.",
           recommendedItems: []
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resDuplicated);
         return resDuplicated;
       }
     }
@@ -339,7 +319,6 @@ Pregunta del usuario: "${query}"`;
           text: "No se registran ventas comerciales para ninguna categoría en el inventario actual.",
           recommendedItems: []
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resNoSales);
         return resNoSales;
       }
 
@@ -348,7 +327,6 @@ Pregunta del usuario: "${query}"`;
         text: `La categoría con mayor volumen de ventas es ${topCat} con un acumulado de ${topSales} unidades vendidas.`,
         recommendedItems: products.filter(p => p.category === topCat).slice(0, 2)
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resTopCategory);
       return resTopCategory;
     }
 
@@ -373,7 +351,6 @@ Pregunta del usuario: "${query}"`;
         text: `La categoría que contiene la mayor variedad de productos es ${maxCat} con un total de ${maxCount} artículos distintos registrados.`,
         recommendedItems: products.filter(p => p.category === maxCat).slice(0, 2)
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resCategoryVariety);
       return resCategoryVariety;
     }
 
@@ -387,7 +364,6 @@ Pregunta del usuario: "${query}"`;
           text: `Los productos actualmente agotados son: ${listStr}.`,
           recommendedItems: outOfStock
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resAgotados);
         return resAgotados;
       } else {
         const resAgotados = {
@@ -395,7 +371,6 @@ Pregunta del usuario: "${query}"`;
           text: "No tienes ningún producto agotado en el inventario. Todo tu catálogo cuenta con disponibilidad.",
           recommendedItems: []
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resAgotados);
         return resAgotados;
       }
     }
@@ -409,7 +384,6 @@ Pregunta del usuario: "${query}"`;
         text: `El artículo más costoso en el inventario es ${top.name} con un precio de ${formatCOP(top.price)} pesos colombianos en la categoría de ${top.category}.`,
         recommendedItems: [top]
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resCaro);
       return resCaro;
     }
 
@@ -429,7 +403,6 @@ Pregunta del usuario: "${query}"`;
           text: "Actualmente no tienes productos en estado de stock crítico.",
           recommendedItems: []
         };
-        console.log('[Copilot Pipeline] Final parsed response returned to UI:', resBajoStock);
         return resBajoStock;
       }
 
@@ -439,7 +412,6 @@ Pregunta del usuario: "${query}"`;
         text: `Los productos con stock crítico o bajo el mínimo son: ${listStr}. Te recomiendo reabastecerlos pronto.`,
         recommendedItems: lowStockProducts
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resBajoStock);
       return resBajoStock;
     }
 
@@ -485,7 +457,6 @@ Pregunta del usuario: "${query}"`;
             text: `Los productos con precios ${relationText} ${formatCOP(targetPrice)} son: ${listStr}.`,
             recommendedItems: filteredProducts.slice(0, 3)
           };
-          console.log('[Copilot Pipeline] Final parsed response returned to UI:', resPriceFilter);
           return resPriceFilter;
         } else {
           const resPriceFilterEmpty = {
@@ -493,7 +464,6 @@ Pregunta del usuario: "${query}"`;
             text: `No encontré productos con precios ${relationText} ${formatCOP(targetPrice)} en tu catálogo actual.`,
             recommendedItems: []
           };
-          console.log('[Copilot Pipeline] Final parsed response returned to UI:', resPriceFilterEmpty);
           return resPriceFilterEmpty;
         }
       }
@@ -515,7 +485,6 @@ Pregunta del usuario: "${query}"`;
         text: `Tu tienda cuenta con ${products.length} productos registrados y un stock total de ${totalStock} prendas, valorado en ${formatCOP(totalValue)}. ¿Qué análisis o dato en particular deseas conocer hoy?`,
         recommendedItems: []
       };
-      console.log('[Copilot Pipeline] Final parsed response returned to UI:', resGeneral);
       return resGeneral;
     }
 
@@ -524,7 +493,6 @@ Pregunta del usuario: "${query}"`;
       text: 'No encontré productos específicos para tu consulta en el inventario o no comprendo la pregunta. ¿Deseas saber sobre stock, categorías, productos repetidos, agotados o precios?',
       recommendedItems: []
     };
-    console.log('[Copilot Pipeline] Final parsed response returned to UI:', resGuidance);
     return resGuidance;
   }
 };
